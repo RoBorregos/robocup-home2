@@ -25,7 +25,7 @@ from vision_tasks import TasksVision
 
 SPEAK_TOPIC = "/speech/speak"
 CONVERSATION_SERVER = "/conversation_as"
-FACE_LOCATIONS_TOPIC = "/person_list"
+FACE_LOCATIONS_TOPIC = "/vision/person_list"
 
 NAV_ENABLED = True
 MANIPULATION_ENABLED = True
@@ -33,10 +33,10 @@ CONVERSATION_ENABLED = True
 VISION_ENABLED = True
 
 
-FAKE_NAV = True
-FAKE_MANIPULATION = True
-FAKE_HRI = True
-FAKE_VISION = True
+FAKE_NAV = False
+FAKE_MANIPULATION = False
+FAKE_HRI = False
+FAKE_VISION = False
 
 
 AREAS = ["nav", "manipulation", "hri", "vision"]
@@ -104,7 +104,8 @@ class ReceptionistTaskManager:
             self.subtask_manager["nav"] = TasksNav(fake=FAKE_NAV)
         if VISION_ENABLED:
             self.subtask_manager["vision"] = TasksVision(fake=FAKE_VISION)
-            rospy.Subscriber(FACE_LOCATIONS_TOPIC, PersonList, self.get_face_locations)
+        self.sub_ = rospy.Subscriber(FACE_LOCATIONS_TOPIC, PersonList, self.get_face_locations) 
+        rospy.loginfo("[INFO] Subcribed to topic " + FACE_LOCATIONS_TOPIC)
 
         self.current_state = STATES["WAITING_GUEST"]
         self.current_past_state = None
@@ -132,6 +133,7 @@ class ReceptionistTaskManager:
     def get_face_locations(self, data: PersonList) -> None:
         """Callback to receive the face locations"""
         self.detected_faces = data.list
+        print("Debug")
 
     def follow_face(self) -> bool:
         """Calls the arm joints server to follow a face

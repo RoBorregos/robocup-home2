@@ -33,7 +33,7 @@ main.create.jetson:
 # ----------------------------START------------------------------------
 # Start containers
 main.up:
-	@xhost +
+	# @xhost +
 	@docker start home-main
 
 # ----------------------------STOP------------------------------------

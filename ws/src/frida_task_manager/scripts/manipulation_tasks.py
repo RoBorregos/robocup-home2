@@ -18,7 +18,7 @@ from std_msgs.msg import String, Int32
 from std_srvs.srv import SetBool
 from frida_hri_interfaces.msg import Command, CommandList
 from frida_manipulation_interfaces.msg import manipulationPickAndPlaceAction, manipulationPickAndPlaceGoal, manipulationPickAndPlaceResult, manipulationPickAndPlaceFeedback
-from frida_manipulation_interfaces.msg import MoveJointAction, MoveJointGoal, MoveJointResult, MoveJointFeedback, moveXYZ
+from frida_manipulation_interfaces.msg import MoveJointAction, MoveJointGoal, MoveJointResult, MoveJointFeedback 
 from frida_manipulation_interfaces.srv import Gripper, MovePose
 
 MANIPULATION_SERVER = "/manipulationServer"
