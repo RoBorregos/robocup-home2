@@ -1,0 +1,6 @@
+{
+    // See ros-generated python libs inside docker with vs-code
+    "python.analysis.extraPaths": [
+        "/workspace/ws/devel/lib/python3/dist-packages",
+    ]
+}
