@@ -163,6 +163,7 @@ RUN apt-get update -qq && apt-get install -y  build-essential \
 #     curl -sSL http://get.gazebosim.org | sh
 
 RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
+RUN echo "source /workspace/ws/devel/setup.bash" | sudo tee -a /home/$USERNAME/.bashrc
 
 RUN mkdir /workspace
 

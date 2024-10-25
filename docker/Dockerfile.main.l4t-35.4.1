@@ -36,6 +36,7 @@ RUN apt-get update && apt-get install -y git-core bash-completion \
 ENV DEBIAN_FRONTEND=
 
 RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
+RUN echo "source /workspace/ws/devel/setup.bash" | sudo tee -a /home/$USERNAME/.bashrc
 
 #RUN mkdir /workspace
 
