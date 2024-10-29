@@ -4,20 +4,21 @@
 This script manages the implementation of each Nav tasks
 """
 
-### Import libraries
+# Import libraries
 import rospy
 import actionlib
 
-### ROS messages
+# ROS messages
 from std_msgs.msg import String
 from std_srvs.srv import SetBool
-from frida_vision_interfaces.srv import NewHost, NewHostResponse, FindSeat, PersonCount 
+from frida_vision_interfaces.srv import NewHost, NewHostResponse, FindSeat, PersonCount
 
-STORE_FACE_SERVICE = "/new_name"
-CHECK_PERSON = "/check_person"
-FIND_TOPIC = "/find_seat"
-PERSON_COUNT_START_TOPIC = "/start_counting"
-PERSON_COUNT_END_TOPIC = "/end_counting"
+STORE_FACE_SERVICE = "/vision/new_name"
+CHECK_PERSON = "/vision/check_person"
+FIND_TOPIC = "/vision/find_seat"
+PERSON_COUNT_START_TOPIC = "/vision/start_counting"
+PERSON_COUNT_END_TOPIC = "/vision/end_counting"
+
 
 class TasksVision:
     """Class to manage the navigation tasks"""
@@ -30,11 +31,11 @@ class TasksVision:
     AREA_TASKS = ["wait", "save"]
 
     def __init__(self) -> None:
-        """Initialize the ROS node""" 
+        """Initialize the ROS node"""
         self.save_name_call = rospy.ServiceProxy(STORE_FACE_SERVICE, NewHost)
 
         self.save_name_call.wait_for_service(timeout=rospy.Duration(10.0))
-        
+
         rospy.loginfo("Vision Task Manager initialized")
 
     def execute_command(self, command: str, target: str, info: str) -> int:
@@ -42,12 +43,12 @@ class TasksVision:
         rospy.loginfo("Nav Command")
 
         return TasksVision.STATE["EXECUTION_ERROR"]
-    
+
     def save_face_name(self, name: str) -> int:
         """Method to save the face name"""
         rospy.loginfo("Save face name")
         try:
-            response = self.save_name_call( name )
+            response = self.save_name_call(name)
             if response.success:
                 return TasksVision.STATE["EXECUTION_SUCCESS"]
         except rospy.ServiceException:
@@ -78,7 +79,7 @@ class TasksVision:
         except rospy.ServiceException:
             rospy.logerr("Service call find_seat failed")
             return 300
-        
+
     def count_persons(self, requirements: str) -> str:
         """Method to count the number of persons in the room"""
         try:
@@ -88,18 +89,19 @@ class TasksVision:
             if response.success:
                 rospy.wait_for_service(PERSON_COUNT_END_TOPIC, timeout=5.0)
                 goal = PersonCount()
-                end_count = rospy.ServiceProxy(PERSON_COUNT_END_TOPIC, PersonCount)
+                end_count = rospy.ServiceProxy(
+                    PERSON_COUNT_END_TOPIC, PersonCount)
                 goal.data = requirements
                 response = end_count(goal)
                 return response.count
         except rospy.ServiceException:
             rospy.logerr("Service call count_persons failed")
             return -1
-        
 
     def cancel_command(self) -> None:
         """Method to cancel the current command"""
         rospy.loginfo("Command canceled Nav")
+
 
 if __name__ == "__main__":
     try:

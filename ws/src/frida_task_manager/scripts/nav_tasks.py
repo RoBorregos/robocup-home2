@@ -4,16 +4,16 @@
 This script manages the implementation of each Nav tasks
 """
 
-### Import libraries
+# Import libraries
 import rospy
 import actionlib
 
-### ROS messages
+# ROS messages
 from std_msgs.msg import String
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from geometry_msgs.msg import Pose
 from frida_navigation_interfaces.msg import navServAction, navServFeedback, navServGoal, navServResult
-#from frida_navigation_interfaces.srv import SetFollowState
+# from frida_navigation_interfaces.srv import SetFollowState
 
 # Topics and servers
 NAV_SERVER = "/navServer"
@@ -24,6 +24,7 @@ APPROACH_SERVICE = "/change_follow_person_state"
 # Active functions
 NAV_SERVER_ACTIVE = True
 MOVE_BASE_ACTIVE = True
+
 
 class TasksNav:
     """Class to manage the navigation tasks"""
@@ -43,23 +44,22 @@ class TasksNav:
         self.approach_active = False
 
         if enabled and self.nav_server_active:
-            self.nav_client = actionlib.SimpleActionClient(NAV_SERVER, navServAction)
+            self.nav_client = actionlib.SimpleActionClient(
+                NAV_SERVER, navServAction)
             if not self.nav_client.wait_for_server(timeout=rospy.Duration(5.0)):
                 self.nav_server_active = False
                 rospy.logerr("Nav server not initialized")
 
         if enabled and self.move_base_active:
-            self.move_base_client = actionlib.SimpleActionClient(MOVE_BASE_SERVER, MoveBaseAction)
+            self.move_base_client = actionlib.SimpleActionClient(
+                MOVE_BASE_SERVER, MoveBaseAction)
             if not self.move_base_client.wait_for_server(timeout=rospy.Duration(5.0)):
                 self.move_base_active = False
                 rospy.logerr("Move Base server not initialized")
         self.past_location = None
 
-
-        #if enabled and self.approach_active:
-            #self.approach_client = rospy.ServiceProxy(APPROACH_SERVICE, SetFollowState)
-
-
+        # if enabled and self.approach_active:
+        # self.approach_client = rospy.ServiceProxy(APPROACH_SERVICE, SetFollowState)
 
     def execute_command(self, command: str, target: str, info: str) -> int:
         """Method to execute each command"""
@@ -91,7 +91,9 @@ class TasksNav:
             rospy.loginfo("Arrived at past location")
             return TasksNav.STATE["EXECUTION_SUCCESS"]
         # Move to room location
-        if self.nav_server_active and self.enabled:
+        print(
+            f"nav server = {self.nav_server_active} and enabled = {self.enabled} and target = {target}")
+        if self.nav_server_active and not self.enabled:
             rospy.logerr("Nav server not available")
             return TasksNav.STATE["EXECUTION_FAILED"]
         try:
@@ -107,13 +109,14 @@ class TasksNav:
     def store_current_location(self) -> int:
         """Method to retrieve the current location of the robot"""
         try:
-            self.past_location = rospy.wait_for_message(LOCATION_TOPIC, Pose, timeout=3.0)
+            self.past_location = rospy.wait_for_message(
+                LOCATION_TOPIC, Pose, timeout=3.0)
             rospy.loginfo("Current location stored")
             return TasksNav.STATE["EXECUTION_SUCCESS"]
         except rospy.ROSException:
             rospy.logerr("Unable to store current location")
             return TasksNav.STATE["EXECUTION_FAILED"]
-        
+
     """def approach_person(self) -> int:
         Method to approach a person
         try:
@@ -132,6 +135,7 @@ class TasksNav:
         """Method to cancel the current command"""
         self.nav_client.cancel_all_goals()
         rospy.loginfo("Command canceled Nav")
+
 
 if __name__ == "__main__":
     try:

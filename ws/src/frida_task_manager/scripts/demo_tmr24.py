@@ -275,7 +275,7 @@ class ReceptionistTaskManager:
                             self.subtask_manager["hri"].speak(f"{self.guests[2].description}", wait=True)
 
                 self.current_state = STATES["GAZE_AT_GUEST"]
-            
+
             ### Gaze at the current guest and inform next action
             elif self.current_state == STATES["GAZE_AT_GUEST"]:
                 rospy.loginfo("Gaze at guest")

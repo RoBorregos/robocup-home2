@@ -3,3 +3,5 @@ devel
 terminator-config
 .catkin_workspace
 __pycache__
+robot_description/
+xarm_ros/
