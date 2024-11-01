@@ -156,8 +156,10 @@ class ReceptionistTaskManager:
             self.arm_moving = True
             for face in self.detected_faces:
                 if face.name == self.followed_person:
+                    print("vefore")
                     self.subtask_manager["manipulation"].move_arm_joints(
-                        face.x, face.y)
+                        face.x, face.y, clear_octomap=True)
+                    print("after")
                     self.arm_moving = False
                     self.detected_faces = []
                     return True
@@ -200,7 +202,7 @@ class ReceptionistTaskManager:
                 rospy.loginfo("Waiting for guest")
                 self.followed_person = "Unknown"
                 self.subtask_manager["manipulation"].move_arm_joints(
-                    0, 0, "face_detection")
+                    0, 0, "face_detection", clear_octomap=True)
                 if self.subtask_manager["vision"].check_person():
                     self.follow_face()
                     self.current_state = STATES["SELF_INTRODUCTION"]
@@ -251,7 +253,7 @@ class ReceptionistTaskManager:
                 self.subtask_manager["hri"].speak(
                     "The host is already waiting for you there. Please stay behind me until I find your seat.", now=False)
                 self.subtask_manager["manipulation"].move_arm_joints(
-                    0, 0, "face_detection")
+                    0, 0, "face_detection", clear_octomap=True)
                 # TODO: Face to front default arm position with arm server
 
                 self.subtask_manager["nav"].execute_command(
@@ -272,7 +274,7 @@ class ReceptionistTaskManager:
                     self.followed_person = "Unknown"  # self.guests[0].name
 
                     self.subtask_manager["manipulation"].move_arm_joints(
-                        0, 0, "face_detection")
+                        0, 0, "face_detection", clear_octomap=True)
                     rospy.loginfo("Save host face")
                     timeout_face = 0
                     while not rospy.is_shutdown() and not self.host_identified and timeout_face < 10:
@@ -294,7 +296,7 @@ class ReceptionistTaskManager:
                         self.host_identified = True
 
                 self.subtask_manager["manipulation"].move_arm_joints(
-                    0, 0, "seat")
+                    0, 0, "seat", clear_octomap=True)
                 timeout_face = 0
                 # Keep following the face until it's recognize IMPROVE
                 while not self.follow_face() and timeout_face < 10:
@@ -322,7 +324,7 @@ class ReceptionistTaskManager:
                     if introduced_to >= 2:
                         break
                     self.subtask_manager["manipulation"].move_arm_joints(
-                        0, 0, location)
+                        0, 0, location, clear_octomap=True)
                     self.detected_faces = []
                     time.sleep(2)
                     current_faces = copy.deepcopy(self.detected_faces)
@@ -342,7 +344,7 @@ class ReceptionistTaskManager:
             elif self.current_state == STATES["GAZE_AT_GUEST"]:
                 rospy.loginfo("Gaze at guest")
                 self.subtask_manager["manipulation"].move_arm_joints(
-                    0, 0, "back")
+                    0, 0, "back", clear_octomap=True)
                 self.followed_person = self.guests[self.current_guest].name
                 timeout_face = 0
                 # Keep following the face until it's recognize IMPROVE
@@ -354,7 +356,7 @@ class ReceptionistTaskManager:
                     f"I'll find you a free seat {self.guests[self.current_guest].name}, please wait.", now=True)
 
                 self.subtask_manager["manipulation"].move_arm_joints(
-                    0, 0, "seat")
+                    0, 0, "seat", clear_octomap=True)
                 self.current_state = STATES["FIND_FREE_SEAT"]
 
             # Find a free seat for the guest
@@ -370,7 +372,7 @@ class ReceptionistTaskManager:
                     self.subtask_manager["hri"].speak(
                         "I have found a free seat for you, please follow the direction of my arm.", now=True)
                     self.subtask_manager["manipulation"].move_arm_joints(
-                        seat_angle, 20)
+                        seat_angle, 20, clear_octomap=True)
                 self.current_state = STATES["WAIT_USER_TO_SIT"]
 
             # Wait for the user to sit
@@ -400,7 +402,7 @@ class ReceptionistTaskManager:
                 self.subtask_manager["nav"].execute_command(
                     "go", "entrance", "")
                 self.subtask_manager["manipulation"].move_arm_joints(
-                    0, 0, "face_detection")
+                    0, 0, "face_detection", clear_octomap=True)
                 self.current_state = STATES["WAITING_GUEST"]
 
             self._rate.sleep()

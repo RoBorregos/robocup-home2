@@ -15,7 +15,7 @@ from geometry_msgs.msg import PoseStamped
 
 # ROS messages
 from std_msgs.msg import String, Int32
-from std_srvs.srv import SetBool
+from std_srvs.srv import SetBool, Empty, EmptyRequest
 from frida_hri_interfaces.msg import Command, CommandList
 from frida_manipulation_interfaces.msg import manipulationPickAndPlaceAction, manipulationPickAndPlaceGoal, manipulationPickAndPlaceResult, manipulationPickAndPlaceFeedback
 from frida_manipulation_interfaces.msg import MoveJointAction, MoveJointGoal, MoveJointResult, MoveJointFeedback, moveXYZ
@@ -87,10 +87,13 @@ class TasksManipulation:
             if not self.manipulation_client.wait_for_server(timeout=rospy.Duration(1.0)):
                 rospy.logerr("[SUCCESS] Manipulation server not initialized")
             rospy.loginfo("[INFO] Connecting to arm group")
-            # self.arm_group = moveit_commander.MoveGroupCommander(
-            #     "arm", wait_for_servers=0)
+            self.arm_group = moveit_commander.MoveGroupCommander(
+                "arm", wait_for_servers=0)
             self.toggle_octomap = rospy.ServiceProxy(
                 '/toggle_octomap', SetBool)
+
+            self.clear_octomap = rospy.ServiceProxy(
+                '/clear_octomap', Empty)
 
             rospy.loginfo("[INFO] Connecting to arm_server")
             if not self.move_arm_client.wait_for_server(timeout=rospy.Duration(1.0)):
@@ -99,6 +102,10 @@ class TasksManipulation:
             if not self.gripper_service.wait_for_service(timeout=rospy.Duration(1.0)):
                 rospy.logerr("[SUCCESS] Gripper service not initialized")
             rospy.loginfo("[INFO] Connecting to move_pose_client")
+
+            rospy.loginfo("A")
+            if not self.clear_octomap.wait_for_service(timeout=rospy.Duration(10.0)):
+                rospy.logwarn("[SUCCESS] Gripper service not initialized")
             # if not self.move_pose_client.wait_for_service(timeout=rospy.Duration(10.0)):
             #     rospy.logerr("[SUCCESS] Move pose client not initialized")
             # rospy.loginfo("[INFO] Connecting to arm group")
@@ -230,9 +237,11 @@ class TasksManipulation:
         else:
             return TasksManipulation.STATE["EXECUTION_SUCCESS"]
 
-    def move_arm_joints(self, target_x: int, target_y: int, position: str = "", clear_prev: bool = False) -> int:
+    def move_arm_joints(self, target_x: int, target_y: int, position: str = "", clear_octomap: bool = False) -> int:
         if not self.FAKE_TASKS:
             """Method to move the arm joints"""
+            if clear_octomap:
+                self.clear_octomap(EmptyRequest())
             if position != "":
                 self.move_arm_client.send_goal(
                     MoveJointGoal(predefined_position=position)
