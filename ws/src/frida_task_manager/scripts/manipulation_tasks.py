@@ -87,8 +87,8 @@ class TasksManipulation:
             if not self.manipulation_client.wait_for_server(timeout=rospy.Duration(10.0)):
                 rospy.logerr("[SUCCESS] Manipulation server not initialized")
             rospy.loginfo("[INFO] Connecting to arm group")
-            self.arm_group = moveit_commander.MoveGroupCommander(
-                "arm", wait_for_servers=0)
+            # self.arm_group = moveit_commander.MoveGroupCommander(
+            #     "arm", wait_for_servers=0)
             self.toggle_octomap = rospy.ServiceProxy(
                 '/toggle_octomap', SetBool)
 
@@ -277,26 +277,27 @@ class TasksManipulation:
         else:
             return TasksManipulation.STATE["EXECUTION_SUCCESS"]
 
-    def moveARM(self, joints, speed, enable_octomap=True):
-        if enable_octomap:
-            rospy.loginfo("[WARNING] MOVING ARM WITH OCTOMAP DISABLED")
-            self.toggle_octomap(False)
-        ARM_JOINTS = rospy.get_param("ARM_JOINTS", [
-                                     "arm_1_joint", "arm_2_joint", "arm_3_joint", "arm_4_joint", "arm_5_joint", "arm_6_joint", "arm_7_joint"])
-        joint_state = JointState()
-        joint_state.name = ARM_JOINTS
-        joint_state.position = joints
-        # set speed
-        self.arm_group.set_max_velocity_scaling_factor(speed)
-        # set RRTConnect and timeout
-        self.arm_group.set_planner_id("RRTConnect")
-        self.arm_group.set_planning_time(20)
-        # planning attempts
-        self.arm_group.set_num_planning_attempts(10)
-        self.arm_group.go(joint_state, wait=True)
-        self.arm_group.stop()
-        if enable_octomap:
-            self.toggle_octomap(True)
+    # @DeprecationWarning
+    # def moveARM(self, joints, speed, enable_octomap=True):
+    #     if enable_octomap:
+    #         rospy.loginfo("[WARNING] MOVING ARM WITH OCTOMAP DISABLED")
+    #         self.toggle_octomap(False)
+    #     ARM_JOINTS = rospy.get_param("ARM_JOINTS", [
+    #                                  "arm_1_joint", "arm_2_joint", "arm_3_joint", "arm_4_joint", "arm_5_joint", "arm_6_joint", "arm_7_joint"])
+    #     joint_state = JointState()
+    #     joint_state.name = ARM_JOINTS
+    #     joint_state.position = joints
+    #     # set speed
+    #     self.arm_group.set_max_velocity_scaling_factor(speed)
+    #     # set RRTConnect and timeout
+    #     self.arm_group.set_planner_id("RRTConnect")
+    #     self.arm_group.set_planning_time(20)
+    #     # planning attempts
+    #     self.arm_group.set_num_planning_attempts(10)
+    #     self.arm_group.go(joint_state, wait=True)
+    #     self.arm_group.stop()
+    #     if enable_octomap:
+    #         self.toggle_octomap(True)
 
     def open_gripper(self) -> int:
         """Method to open the gripper"""
