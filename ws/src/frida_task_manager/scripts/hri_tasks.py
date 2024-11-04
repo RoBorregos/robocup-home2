@@ -17,6 +17,9 @@ from frida_hri_interfaces.msg import GuestAnalysisAction, GuestAnalysisFeedback,
 from frida_hri_interfaces.srv import GuestInfo, GuestInfoResponse
 import random
 
+from enum import Enum
+from typing import List
+
 SPEAK_TOPIC_NOW = "/speech/speak_now"
 SPEAK_TOPIC = "/speech/speak"
 CONVERSATION_SERVER = "/conversation_as"
@@ -28,16 +31,14 @@ KEYWORD_TOPIC = "keyword_detected"
 
 
 class TasksHRI:
-    STATE_ENUM = {
-        "IDLE": 0,
-        "RECEIVE_COMMANDS": 1,
-        "EXECUTING_COMMANDS": 2,
-        "STOPPING": 3,
-        "ERROR": 4,
-        "SHUTDOWN": 5
-    }
 
-    AREA_TASKS = ["ask", "interact", "feedback", "analyze_objects", "speak"]
+    class Tasks(Enum):
+        ask = "ask"
+        interact = "interact"
+        feedback = "feedback"
+        analyze_objects = "analyze_objects"
+        speak = "speak"
+
     OBJECT_CATEGORIES = ["decorations", "cleaning_supplies",
                          "toys", "fruits", "drinks", "snaks", "dishes", "food"]
 
@@ -191,6 +192,10 @@ class TasksHRI:
 
     def callbackKeyword(self, data):
         self.keyword_detected = True
+
+    def get_tasks(self) -> List[str]:
+        """Method to get the list of tasks"""
+        return [task.value for task in self.Tasks]
 
 
 if __name__ == "__main__":

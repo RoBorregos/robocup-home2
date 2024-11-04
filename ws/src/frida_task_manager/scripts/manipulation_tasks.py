@@ -5,6 +5,7 @@ This script manages the implementation of each of the manipulation tasks
 """
 
 # Import libraries
+from typing import List
 import rospy
 import actionlib
 
@@ -342,6 +343,10 @@ class TasksManipulation:
             return TasksManipulation.STATE["EXECUTION_SUCCESS"]
         else:
             return TasksManipulation.STATE["EXECUTION_SUCCESS"]
+
+    def get_tasks(self) -> List[str]:
+        """Method to get the list of tasks"""
+        return self.AREA_TASKS
 
 
 if __name__ == "__main__":

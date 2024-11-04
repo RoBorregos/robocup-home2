@@ -166,32 +166,6 @@ class ReceptionistTaskManager:
             self.arm_moving = False
         return False
 
-    def execute_command(self, command: Command) -> int:
-        """Method for executing a single command inside its area submodule"""
-
-        rospy.loginfo(
-            f"Executing command: {command.action} -> {command.complement}")
-
-        task_result = 0
-        for area in AREAS:
-            if command.action in ReceptionistTaskManager.COMMANDS_CATEGORY[area] and AREA_ENABLED[area]:
-                task_result = self.subtask_manager[area].execute_command(
-                    command.action, command.complement, self.perceived_information
-                )
-
-        if task_result == -1:
-            rospy.logerr("Error in task execution")
-            return STATES["ERROR"]
-
-        self.perceived_information += f"{command.action} {command.complement} {task_result} "
-        return STATES["EXECUTING_COMMANDS"]
-
-    def cancel_command(self) -> None:
-        """Method to cancel the current command"""
-        for area in AREAS:
-            if self.current_command in ReceptionistTaskManager.COMMANDS_CATEGORY[area]:
-                self.subtask_manager[area].cancel_command()
-
     def run(self) -> None:
         """Main loop for the task manager"""
 

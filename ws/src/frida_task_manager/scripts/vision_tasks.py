@@ -5,6 +5,7 @@ This script manages the implementation of each Vision tasks
 """
 
 # Import libraries
+from typing import List
 import rospy
 import actionlib
 
@@ -424,6 +425,10 @@ class TasksVision:
     def cancel_command(self) -> None:
         """Method to cancel the current command"""
         rospy.loginfo("Command canceled Nav")
+
+    def get_tasks(self) -> List[str]:
+        """Method to get the list of tasks"""
+        return self.AREA_TASKS
 
 
 if __name__ == "__main__":
