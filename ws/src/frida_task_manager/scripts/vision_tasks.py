@@ -4,11 +4,12 @@
 This script manages the implementation of each Vision tasks
 """
 
-### Import libraries
+# Import libraries
+from typing import List
 import rospy
 import actionlib
 
-### ROS messages
+# ROS messages
 from std_msgs.msg import String
 from geometry_msgs.msg import PointStamped
 from sensor_msgs.msg import Image
@@ -20,7 +21,7 @@ from frida_vision_interfaces.msg import MoondreamFromCameraAction, MoondreamFrom
 from frida_manipulation_interfaces.msg import objectDetection, objectDetectionArray
 from frida_vision_interfaces.srv import Pointing, NewHost, NewHostResponse, FindSeat, ShelfDetections
 from std_srvs.srv import SetBool
-#from frida_vision_interfaces.srv import ShelfDetection
+# from frida_vision_interfaces.srv import ShelfDetection
 import random
 import math
 
@@ -45,10 +46,12 @@ MOONDREAM_FROM_CAMERA_AS = "/vision/moondream_from_camera"
 ################################################################
 # MOONDREAM PROMPTS
 ################################################################
-
-SHELF_PROMPT = "Using only one word, categorize the objects in this shelve"
+OBJECT_CATEGORIES = ["decorations", "cleaning_supplies",
+                     "toys", "fruits", "drinks", "snaks", "dishes", "food"]
+# SHELF_PROMPT = "Using only one word, categorize the objects in this shelve"
 # Another option with more specific categories
-SHELF_PROMPT = "Using only one word, categorize the objects in this shelve. Answer with any of the following options: 'beverages','food','kitchen tools','tools','balls' or 'empty'"
+SHELF_PROMPT = "Using only one word, categorize the objects in this image. Answer with any of the options in the following list: {}".format(
+    OBJECT_CATEGORIES)
 DRINK_PROMPT = "Answering only 'yes' or 'no', is the person in the image holding a drink?"
 DESCRIPTION_PROMPT = "Give me a description of the person in the image. Do not use genders, races, skin tone. Only describe the person's hair, clothes and accesories. Answer in the format: 'The person has hair color, clothes and accesories'"
 
@@ -71,8 +74,8 @@ class TasksVision:
 
     AREA_TASKS = ["get_bag", "wait", "save", "get_shelves"]
 
-    def __init__(self, fake = False) -> None:
-        
+    def __init__(self, fake=False) -> None:
+
         self.FAKE_TASKS = fake
         # Context information
         self.bag_information = {
@@ -85,7 +88,7 @@ class TasksVision:
         self.n_detections = 5
         self.detected_objects = None
         self.guest_description = ["", "", ""]
-        
+
         if not self.FAKE_TASKS:
             rospy.loginfo("[INFO] Waiting for bag server")
             # if POINTING_ACTIVE:
@@ -101,16 +104,18 @@ class TasksVision:
             #     if not self.shelf_client.wait_for_service(timeout=rospy.Duration(3.0)):
             #         rospy.logerr("Shelf detection service not initialized")
             self.cv_bridge = CvBridge()
-            # self.save_name_call = rospy.ServiceProxy(STORE_FACE_SERVICE, NewHost)
-            # if not self.save_name_call.wait_for_service(timeout=rospy.Duration(3.0)):
-            #     rospy.logerr("Save name service not initialized")
-            self.moondream_from_camera_client = actionlib.SimpleActionClient(MOONDREAM_FROM_CAMERA_AS, MoondreamFromCameraAction)
+            self.save_name_call = rospy.ServiceProxy(
+                STORE_FACE_SERVICE, NewHost)
+            if not self.save_name_call.wait_for_service(timeout=rospy.Duration(3.0)):
+                rospy.logerr("Save name service not initialized")
+            self.moondream_from_camera_client = actionlib.SimpleActionClient(
+                MOONDREAM_FROM_CAMERA_AS, MoondreamFromCameraAction)
             if not self.moondream_from_camera_client.wait_for_server(timeout=rospy.Duration(3.0)):
                 rospy.logerr("Moondream from camera server not initialized")
-            
+
         else:
             rospy.loginfo("Fake Vision Task Manager initialized")
-        
+
         rospy.loginfo("[SUCCESS] Vision Task Manager initialized")
 
     def execute_command(self, command: str, target: str, info: str) -> int:
@@ -123,7 +128,7 @@ class TasksVision:
             # self.bag_information["id"] = 1
             # self.bag_information["name"] = "bag"
             # # set dummy pose with dummy values
-            # self.bag_information["PoseStamped"] = PoseStamped(header="zed2_camera_link", 
+            # self.bag_information["PoseStamped"] = PoseStamped(header="zed2_camera_link",
             #                                                   pose=Pose(position=Point(10,20,30),
             #                                                             orientation=Quaternion(0,0,0,1))
             # )
@@ -177,7 +182,8 @@ class TasksVision:
                     return TasksVision.STATE["EXECUTION_SUCCESS"]
         else:
             # Dummy values
-            result = DetectPointingObjectResult(result = True, label=1, labelText="bag", point3D=PoseStamped(header="base_link", pose=Pose(position=(10, 20, 30), orientation=(70, 60, 50, 1))))
+            result = DetectPointingObjectResult(result=True, label=1, labelText="bag", point3D=PoseStamped(
+                header="base_link", pose=Pose(position=(10, 20, 30), orientation=(70, 60, 50, 1))))
 
             if result.result:
                 rospy.loginfo(f"[SUCCESS] Result: {result}")
@@ -186,9 +192,9 @@ class TasksVision:
                 self.bag_information["name"] = result.labelText
                 self.bag_information["PoseStamped"] = result.point3D
                 return TasksVision.STATE["EXECUTION_SUCCESS"]
-            
+
         return TasksVision.STATE["EXECUTION_ERROR"]
-    
+
     def get_bag_direction(self) -> str:
         """Method to get the bag direction"""
         rospy.loginfo("[INFO] Getting the bag direction")
@@ -205,75 +211,83 @@ class TasksVision:
         else:
             # Dummy values
             return "right"
-    
+
     def get_bag_information(self) -> dict:
         """Method to get the bag information"""
         return self.bag_information["id"], self.bag_information["name"], self.bag_information["PoseStamped"]
-    
+
     def get_object(self) -> str:
         """Method to get the object"""
         if self.FAKE_TASKS:
             return "sample_object"
         for i in range(DETECTION_TRIES):
             rospy.loginfo("[INFO] Getting Detections")
-            try: 
-                detections = rospy.wait_for_message(DETECTION_TOPIC, objectDetectionArray, timeout=10.0)
+            try:
+                detections = rospy.wait_for_message(
+                    DETECTION_TOPIC, objectDetectionArray, timeout=10.0)
                 closest_distance = 10000
                 closest_index = 0
+
                 for i, detection in enumerate(detections.detections):
+                    if str(detection.labelText).lower() in ["sports ball", "bottle", "wine glass", "cup", "bowl", "apple", "banana", "book", "vase", "bread", "canned", "candle", "toiletry", "tomato", "green vegetables", "toilet paper", "cookies"]:
+                        continue
                     # return closest object
-                    #point3d is pointstamped
+                    # point3d is pointstamped
                     point3D = detection.point3D.point
-                    distance = math.sqrt(point3D.x**2 + point3D.y**2 + point3D.z**2)
+                    distance = math.sqrt(
+                        point3D.x**2 + point3D.y**2 + point3D.z**2)
                     if distance < closest_distance:
                         closest_distance = distance
                         closest_index = i
                 return detections.detections[closest_index].labelText
-                    
+
             except rospy.exceptions.ROSException:
                 print(self.no_objects_str)
-            
+
         return self.no_objects_str
 
     def get_objects(self) -> list:
         """Method to get the labels of the detected objects"""
         obj_labels = []
         for i in range(5):
-            self.detected_objects = rospy.wait_for_message(DETECTION_TOPIC, objectDetectionArray)
+            self.detected_objects = rospy.wait_for_message(
+                DETECTION_TOPIC, objectDetectionArray)
             for obj in self.detected_objects.objects:
                 obj_labels.append(obj.labelText)
 
         obj_labels = list(set(obj_labels))
-            
+
         return obj_labels
-    
+
     ################################################################
     # STORING GROCERIES
     ################################################################
-        
+
     def get_shelves(self) -> list:
         """Method to get the shelves"""
         # returns list with [shelve["shelve_number"], shelve["category"], shelve["height"]]
         if self.FAKE_TASKS:
             newShelve = {}
             newShelve["shelve_number"] = 1
-            newShelve["objects"] = ["sample_object1", "sample_object2", "sample_object3"]
+            newShelve["objects"] = ["sample_object1",
+                                    "sample_object2", "sample_object3"]
             newShelve["height"] = 0.40
             newShelve2 = {}
             newShelve2["shelve_number"] = 2
-            newShelve2["objects"] = ["sample_object1", "sample_object2", "sample_object3"]
+            newShelve2["objects"] = ["sample_object1",
+                                     "sample_object2", "sample_object3"]
             newShelve2["height"] = 0.70
             # newShelve3 = {}
             # newShelve3["shelve_number"] = 3
             # newShelve3["objects"] = ["sample_object1", "sample_object2", "sample_object3"]
             # newShelve3["height"] = 1.0
-            
+
             return [newShelve, newShelve2]
         else:
             shelf_result = self.shelf_client(True)
             shelf = shelf_result.shelf
             shelf_list = []
-            
+
             for level in shelf.levels:
                 newShelve = {}
                 newShelve["shelve_number"] = level.label
@@ -282,20 +296,21 @@ class TasksVision:
                 shelf_list.append(newShelve)
             return shelf_list
         return []
-    
+
     def get_shelve_moondream(self) -> str:
         """Method to get the shelve category using Moondream"""
         if self.FAKE_TASKS:
-            return random.choice(["food", "tools", "toys"])
+            return random.choice(OBJECT_CATEGORIES)
         else:
-            goal = MoondreamFromCameraGoal(camera_topic=IMAGE_TOPIC, prompt=SHELF_PROMPT)
+            goal = MoondreamFromCameraGoal(
+                camera_topic=IMAGE_TOPIC, prompt=SHELF_PROMPT)
             # rospy.loginfo("Moondream sent goal for shelf recognition: ", goal)
             self.moondream_from_camera_client.send_goal(goal)
             self.moondream_from_camera_client.wait_for_result()
             result = self.moondream_from_camera_client.get_result()
             # rospy.loginfo("Moondream result: ", result)
             return result.response
-    
+
     ################################################################
     # RECEPTIONIST
     ################################################################
@@ -304,10 +319,10 @@ class TasksVision:
         """Method to save the face name"""
         if self.FAKE_TASKS:
             return TasksVision.STATE["EXECUTION_SUCCESS"]
-        
+
         rospy.loginfo("Save face name")
         try:
-            response = self.save_name_call( name )
+            response = self.save_name_call(name)
             if response.success:
                 return TasksVision.STATE["EXECUTION_SUCCESS"]
         except rospy.ServiceException:
@@ -319,7 +334,7 @@ class TasksVision:
         """Method to check if a person is detected calling PersonDetection.py"""
         if self.FAKE_TASKS:
             return True
-        
+
         try:
             rospy.wait_for_service(CHECK_PERSON, timeout=5.0)
             check_person = rospy.ServiceProxy(CHECK_PERSON, SetBool)
@@ -333,7 +348,7 @@ class TasksVision:
         """Method to find the angle the robot should turn to point the free seat"""
         if self.FAKE_TASKS:
             return 300
-        
+
         try:
             rospy.wait_for_service(FIND_TOPIC, timeout=5.0)
             find_seat = rospy.ServiceProxy(FIND_TOPIC, FindSeat)
@@ -344,14 +359,15 @@ class TasksVision:
         except rospy.ServiceException:
             rospy.logerr("Service call find_seat failed")
             return 300
-        
-    def get_people(self, in_room = False) -> list:
+
+    def get_people(self, in_room=False) -> list:
         """ Method to get the people detected in the image """
         if self.FAKE_TASKS:
             return [Person(), Person()]
         people = []
         print("Waiting for detections")
-        detections = rospy.wait_for_message(ROOM_DETECTIONS_TOPIC if in_room else DETECTION_TOPIC, objectDetectionArray)
+        detections = rospy.wait_for_message(
+            ROOM_DETECTIONS_TOPIC if in_room else DETECTION_TOPIC, objectDetectionArray)
         for detection in detections.detections:
             if detection.labelText == "person":
                 person = Person()
@@ -362,43 +378,46 @@ class TasksVision:
                 person.Point3D = detection.point3D
                 people.append(person)
         return people
-    
+
     def analyze_guest(self, guest_id: int) -> str:
         """Method to get a guest description using moondream"""
         if self.FAKE_TASKS:
             self.guest_description[guest_id] = "The person has a red shirt and glasses, they are smiling"
             return "The person has a red shirt and glasses, they are smiling"
-        
+
         rospy.loginfo("Checking for people in the image")
         people = self.get_people()
         rospy.loginfo(f"Found {len(people)} people in the image")
         closest_person_id = -1
         closest_distance = 10000
         for i, person in enumerate(people):
-            distance = math.sqrt(person.Point3D.point.x**2 + person.Point3D.point.y**2 + person.Point3D.point.z**2)
+            distance = math.sqrt(
+                person.Point3D.point.x**2 + person.Point3D.point.y**2 + person.Point3D.point.z**2)
             if distance < closest_distance:
                 closest_distance = distance
                 closest_person_id = i
         if closest_person_id == -1:
             return ""
-        
+
         rospy.loginfo("Sending Moondream goal to describe person in image")
-        rospy.loginfo(f"Person coordinates: {people[closest_person_id].xmin}, {people[closest_person_id].ymin}, {people[closest_person_id].xmax}, {people[closest_person_id].ymax}")
-        self.moondream_from_camera_client.send_goal(MoondreamFromCameraGoal(camera_topic=IMAGE_TOPIC, prompt=DESCRIPTION_PROMPT, roi_x1=people[closest_person_id].xmin, roi_y1=people[closest_person_id].ymin, roi_x2=people[closest_person_id].xmax, roi_y2=people[closest_person_id].ymax)) 
+        rospy.loginfo(
+            f"Person coordinates: {people[closest_person_id].xmin}, {people[closest_person_id].ymin}, {people[closest_person_id].xmax}, {people[closest_person_id].ymax}")
+        self.moondream_from_camera_client.send_goal(MoondreamFromCameraGoal(camera_topic=IMAGE_TOPIC, prompt=DESCRIPTION_PROMPT,
+                                                    roi_x1=people[closest_person_id].xmin, roi_y1=people[closest_person_id].ymin, roi_x2=people[closest_person_id].xmax, roi_y2=people[closest_person_id].ymax))
         self.moondream_from_camera_client.wait_for_result()
         result = self.moondream_from_camera_client.get_result()
-        
+
         if "the person in the image" in result.response.lower():
             print("Cut answer")
-            result.response = result.response.lower().replace("the person in the image", "The person")
+            result.response = result.response.lower().replace(
+                "the person in the image", "The person")
         elif "a person" in result.response.lower():
             print("Cut answer")
             result.response = result.response.lower().replace("A person", "The person is")
         self.guest_description[guest_id] = result.response
-        
+
         return result.response
-        
-    
+
     def get_guest_description(self, guest_id: int) -> str:
         """Method to get the guest description stored"""
         return self.guest_description[guest_id]
@@ -406,6 +425,10 @@ class TasksVision:
     def cancel_command(self) -> None:
         """Method to cancel the current command"""
         rospy.loginfo("Command canceled Nav")
+
+    def get_tasks(self) -> List[str]:
+        """Method to get the list of tasks"""
+        return self.AREA_TASKS
 
 
 if __name__ == "__main__":

@@ -4,20 +4,22 @@
 This script manages the implementation of each Nav tasks
 """
 
-### Import libraries
+# Import libraries
+from typing import List
 import rospy
 import actionlib
 
-### ROS messages
+# ROS messages
 from std_msgs.msg import String
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from tf2_geometry_msgs import PoseStamped, PointStamped
-from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Pose, Twist
 from frida_navigation_interfaces.msg import navServAction, navServFeedback, navServGoal, navServResult
 from frida_navigation_interfaces.srv import CreateGoal, CreateGoalRequest, CreateGoalResponse
 from frida_navigation_interfaces.msg import moveActionAction, moveActionGoal, moveActionResult, moveActionFeedback
 from std_srvs.srv import SetBool
 import math
+import time
 
 import tf2_ros
 import tf.transformations as transformations
@@ -27,6 +29,7 @@ MOVE_BASE_SERVER = "/move_base"
 LOCATION_TOPIC = "/robot_pose"
 APPROACH_SERVER = "/moveServer"
 
+
 class TasksNav:
     """Class to manage the navigation tasks"""
     STATE = {
@@ -35,23 +38,30 @@ class TasksNav:
         "EXECUTION_SUCCESS": 1
     }
 
-    AREA_TASKS = ["go", "follow", "stop", "approach", "remember", "deproach", "door_signal"]
+    AREA_TASKS = ["go", "follow", "stop", "approach",
+                  "remember", "deproach", "door_signal", "move"]
 
-    def __init__(self, fake = False) -> None:
+    def __init__(self, fake=False) -> None:
         self.FAKE_TASKS = fake
         if not self.FAKE_TASKS:
             self.tf_buffer = tf2_ros.Buffer()
             self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
-            self.nav_client = actionlib.SimpleActionClient(NAV_SERVER, navServAction)
-            self.move_base_client = actionlib.SimpleActionClient(MOVE_BASE_SERVER, MoveBaseAction)
+            self.nav_client = actionlib.SimpleActionClient(
+                NAV_SERVER, navServAction)
+            self.move_base_client = actionlib.SimpleActionClient(
+                MOVE_BASE_SERVER, MoveBaseAction)
             # self.approach_client = actionlib.SimpleActionClient(APPROACH_SERVER, moveActionAction)
             # self.map_pose_transformer = rospy.ServiceProxy("/create_goal", CreateGoal)
-            self.follow_person_toggle = rospy.ServiceProxy("/change_follow_person_state", SetBool)
-            self.test_pose_pub = rospy.Publisher("/nav_test_pose_task_manager", PoseStamped, queue_size=1)
-            
+            self.follow_person_toggle = rospy.ServiceProxy(
+                "/change_follow_person_state", SetBool)
+            self.test_pose_pub = rospy.Publisher(
+                "/nav_test_pose_task_manager", PoseStamped, queue_size=1)
+            self.cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
+            self.r = rospy.Rate(50)
+
             rospy.loginfo("[INFO] Waiting for nav server")
             if not self.nav_client.wait_for_server(timeout=rospy.Duration(5.0)):
-               rospy.logerr("Nav server not initialized")
+                rospy.logerr("Nav server not initialized")
             rospy.loginfo("[INFO] Waiting for move base server")
             if not self.move_base_client.wait_for_server(timeout=rospy.Duration(5.0)):
                 rospy.logerr("[INFO] Move Base server not initialized")
@@ -63,7 +73,7 @@ class TasksNav:
             #     rospy.logerr("[INFO] Approach person server not initialized")
         else:
             rospy.loginfo("[INFO] Fake Nav Task Manager initialized")
-        
+
         rospy.loginfo("[SUCCESS] Nav Task Manager initialized")
         self.past_location = None
 
@@ -85,6 +95,8 @@ class TasksNav:
             return self.deproach()
         if command == "door_signal":
             return self.door_signal()
+        if command == "move":
+            return self.move()
 
         return TasksNav.STATE["EXECUTION_ERROR"]
 
@@ -95,7 +107,7 @@ class TasksNav:
                 if self.past_location is None:
                     rospy.logerr("No past location stored")
                     return TasksNav.STATE["EXECUTION_ERROR"]
-                
+
                 goal = MoveBaseGoal()
                 goal.target_pose.header.frame_id = "map"
                 goal.target_pose.header.stamp = rospy.Time.now()
@@ -111,10 +123,10 @@ class TasksNav:
                 goal.goal_type = navServGoal.BACKWARD
                 self.nav_client.send_goal(goal)
                 self.nav_client.wait_for_result()
-                #self.go_place("past location")
+                # self.go_place("past location")
                 rospy.loginfo("[SUCCESS] Arrived at back location")
                 return TasksNav.STATE["EXECUTION_SUCCESS"]
-                
+
             # Move to room location
             try:
                 goal = navServGoal()
@@ -127,8 +139,10 @@ class TasksNav:
                 rospy.logerr("Location not found")
                 return TasksNav.STATE["EXECUTION_ERROR"]
         else:
-            rospy.loginfo("[INFO] Going to past location" if target == "past location" else f"Going to {target}")
-            rospy.loginfo("[SUCCESS] Arrived at past location" if target == "past location" else f"Arrived at {target}")
+            rospy.loginfo("[INFO] Going to past location" if target ==
+                          "past location" else f"Going to {target}")
+            rospy.loginfo("[SUCCESS] Arrived at past location" if target ==
+                          "past location" else f"Arrived at {target}")
             return TasksNav.STATE["EXECUTION_SUCCESS"]
 
     def go_pose(self, target: PoseStamped) -> int:
@@ -138,7 +152,7 @@ class TasksNav:
             if goal.target_pose.header.frame_id != "map":
                 # Transform pose to the map frame
                 rospy.loginfo("[INFO] Transforming pose")
-                
+
                 pass
             goal.target_pose.header.frame_id = "map"
             goal.target_pose.header.stamp = rospy.Time.now()
@@ -150,7 +164,7 @@ class TasksNav:
         else:
             rospy.loginfo("[INFO] Going to pose")
             return TasksNav.STATE["EXECUTION_SUCCESS"]
-    
+
     def approach_pose(self, target: str) -> int:
         """Action to approach a specific location"""
         if not self.FAKE_TASKS:
@@ -161,7 +175,7 @@ class TasksNav:
             self.nav_client.send_goal(goal)
             self.nav_client.wait_for_result()
             rospy.loginfo("[SUCCESS] Arrived at pose")
-            
+
             return TasksNav.STATE["EXECUTION_SUCCESS"]
         else:
             rospy.loginfo("[INFO] Arrived at pose")
@@ -176,12 +190,12 @@ class TasksNav:
             self.nav_client.send_goal(goal)
             self.nav_client.wait_for_result()
             rospy.loginfo("[SUCCESS] Deproached pose")
-            
+
             return TasksNav.STATE["EXECUTION_SUCCESS"]
         else:
             rospy.loginfo("[INFO] Deproached pose")
             return TasksNav.STATE["EXECUTION_SUCCESS"]
-        
+
     def door_signal(self) -> int:
         """Action to signal the door"""
         if not self.FAKE_TASKS:
@@ -191,7 +205,7 @@ class TasksNav:
             self.nav_client.send_goal(goal)
             self.nav_client.wait_for_result()
             rospy.loginfo("[SUCCESS] Signaled door")
-            
+
             return TasksNav.STATE["EXECUTION_SUCCESS"]
         else:
             rospy.loginfo("[INFO] Signaled door")
@@ -201,7 +215,8 @@ class TasksNav:
         """Method to retrieve the current location of the robot"""
         if not self.FAKE_TASKS:
             try:
-                self.past_location = rospy.wait_for_message(LOCATION_TOPIC, Pose, timeout=3.0)
+                self.past_location = rospy.wait_for_message(
+                    LOCATION_TOPIC, Pose, timeout=3.0)
                 rospy.loginfo("[SUCCESS] Current location stored")
                 return TasksNav.STATE["EXECUTION_SUCCESS"]
             except rospy.ROSException:
@@ -210,7 +225,7 @@ class TasksNav:
         else:
             rospy.loginfo("[SUCCESS] Current location stored")
             return TasksNav.STATE["EXECUTION_SUCCESS"]
-    
+
     def follow_person(self) -> int:
         """Method to follow a person"""
         if not self.FAKE_TASKS:
@@ -224,7 +239,27 @@ class TasksNav:
         else:
             rospy.loginfo("[SUCCESS] Starting Following person")
             return TasksNav.STATE["EXECUTION_SUCCESS"]
-    
+
+    def move(self):
+        cmd_vel = Twist()
+        cmd_vel.linear.x = 0.5
+
+        pre_time = time.time()
+        rospy.loginfo(str(time.time() - pre_time))
+        while time.time() - pre_time < 5:
+            if rospy.is_shutdown():
+                rospy.loginfo('Error')
+                return TasksNav.STATE["EXECUTION_ERROR"]
+            rospy.loginfo(f"{cmd_vel}")
+            self.cmd_vel_pub.publish(cmd_vel)
+            self.r.sleep()
+
+        cmd_vel.linear.x = 0.0
+        rospy.loginfo(f"{cmd_vel}")
+        self.cmd_vel_pub.publish(cmd_vel)
+
+        return TasksNav.STATE["EXECUTION_SUCCESS"]
+
     def stop_follow_person(self) -> int:
         """Method to stop following a person"""
         if not self.FAKE_TASKS:
@@ -244,12 +279,17 @@ class TasksNav:
         if not self.FAKE_TASKS:
             self.move_base_client.cancel_all_goals()
         rospy.loginfo("[INFO] Command canceled Nav")
-    
+
     def cancel_goals(self) -> None:
         """Method to cancel all goals"""
         if not self.FAKE_TASKS:
             self.move_base_client.cancel_all_goals()
         rospy.loginfo("[INFO] Goals canceled Nav")
+
+    def get_tasks(self) -> List[str]:
+        """Method to get the list of tasks"""
+        return self.AREA_TASKS
+
 
 if __name__ == "__main__":
     try:
