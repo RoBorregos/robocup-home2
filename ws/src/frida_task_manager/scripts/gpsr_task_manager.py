@@ -59,7 +59,7 @@ class Gpsr_SM(StateMachine):
 
     def on_enter_introduction(self, event, state):
         self.execute_command(Command(
-            action="speak", characteristic="Hello, I'm Frida, your personal assistant. I'm here to help you with your tasks. Please tell me what you need me to do.", complement=True))
+            action="speak", complement="Hello, I'm Frida, your personal assistant. I'm here to help you with your tasks. Please tell me what you need me to do.", characteristic=True))
         self.finished_execution()
 
     def on_exit_state(self, event, state):
@@ -73,19 +73,22 @@ class Gpsr_SM(StateMachine):
         self.finished_execution()
 
     def execute_command(self, command: Command):
-        rospy.loginfo(
-            f"Executing command: {command.action} -> {command.complement}")
-
         task_result = 0
+        found = False
         for sub_task_manager in self.task_managers:
             if command.action in sub_task_manager.get_tasks():
 
                 task_result = sub_task_manager.execute_command(
-                    command.action, command.characteristic, command.complement
+                    command.action, command.complement, command.characteristic
                 )
+                found = True
                 break
 
-        self.perceived_information += f"{command.action} {command.complement} {task_result} "
+        if not found:
+            rospy.logerr(f"Task not found: {command.action}")
+            self.perceived_information += f"Task not found: {command.action} "
+        else:
+            self.perceived_information += f"{command.action} {command.complement} {task_result} "
 
 
 class Gpsr_ROS:

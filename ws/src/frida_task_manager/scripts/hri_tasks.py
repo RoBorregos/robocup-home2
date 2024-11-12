@@ -98,6 +98,9 @@ class TasksHRI:
             return self.speak(complement)
         elif command == "cancel":
             return self.cancel_command()
+        elif command == "clarification":
+            self.speak("I didn't understand your command.")
+            return self.speak(complement)
         elif command == "analyze_objects":
             return self.get_objects_category(perceived_information.split(","))
 
