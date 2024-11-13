@@ -41,7 +41,7 @@ SHELF_SERVER = "/shelf_detector"
 DETECTION_TOPIC = "/detections"
 ROOM_DETECTIONS_TOPIC = "/vision/room_detections"
 IMAGE_TOPIC = "/zed2/zed_node/rgb/image_rect_color"
-MOONDREAM_FROM_CAMERA_AS = "/vision/moondream_from_camera"
+MOONDREAM_FROM_CAMERA_AS = "/moondream"
 
 ################################################################
 # MOONDREAM PROMPTS
@@ -386,7 +386,14 @@ class TasksVision:
             return "The person has a red shirt and glasses, they are smiling"
 
         rospy.loginfo("Checking for people in the image")
-        people = self.get_people()
+
+        for retry in range(3):
+            rospy.loginfo(f"Get people retry {retry}.")
+
+            people = self.get_people()
+            if len(people) != 0:
+                break
+
         rospy.loginfo(f"Found {len(people)} people in the image")
         closest_person_id = -1
         closest_distance = 10000

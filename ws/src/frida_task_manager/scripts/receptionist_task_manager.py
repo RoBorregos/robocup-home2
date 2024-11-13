@@ -156,10 +156,8 @@ class ReceptionistTaskManager:
             self.arm_moving = True
             for face in self.detected_faces:
                 if face.name == self.followed_person:
-                    print("vefore")
                     self.subtask_manager["manipulation"].move_arm_joints(
                         face.x, face.y, clear_octomap=True)
-                    print("after")
                     self.arm_moving = False
                     self.detected_faces = []
                     return True
@@ -168,6 +166,10 @@ class ReceptionistTaskManager:
 
     def run(self) -> None:
         """Main loop for the task manager"""
+
+        rospy.loginfo("Going to entrance")
+        self.subtask_manager["nav"].execute_command(
+            "go", "entrance", "")
 
         while not rospy.is_shutdown():
             dt = rospy.Time.now() - self.last_time  # Time from last iteration
@@ -186,7 +188,7 @@ class ReceptionistTaskManager:
                 rospy.loginfo("Self introduction")
                 self.follow_face()
                 self.subtask_manager["hri"].speak(
-                    "Hi, my name is Frida. I'll be your receptionist today. Could you tell me your name and your favorite drink?", now=False)
+                    "Hi, my name is Frida. I'll be your receptionist today. When my light blinks fast I'm listening. Could you tell me your name and your favorite drink?", now=False)
                 self.current_state = STATES["REQUEST_GUEST_INFORMATION"]
 
             # Request name and favorite drink and store in current guest object

@@ -9,7 +9,6 @@ from typing import List
 import rospy
 import actionlib
 
-import moveit_commander
 from sensor_msgs.msg import JointState
 from geometry_msgs.msg import PoseStamped
 
@@ -88,8 +87,6 @@ class TasksManipulation:
             if not self.manipulation_client.wait_for_server(timeout=rospy.Duration(1.0)):
                 rospy.logerr("[SUCCESS] Manipulation server not initialized")
             rospy.loginfo("[INFO] Connecting to arm group")
-            # self.arm_group = moveit_commander.MoveGroupCommander(
-            #     "arm", wait_for_servers=0)
             self.toggle_octomap = rospy.ServiceProxy(
                 '/toggle_octomap', SetBool)
 
@@ -104,7 +101,6 @@ class TasksManipulation:
                 rospy.logerr("[SUCCESS] Gripper service not initialized")
             rospy.loginfo("[INFO] Connecting to move_pose_client")
 
-            rospy.loginfo("A")
             if not self.clear_octomap.wait_for_service(timeout=rospy.Duration(10.0)):
                 rospy.logwarn("[SUCCESS] Gripper service not initialized")
             # if not self.move_pose_client.wait_for_service(timeout=rospy.Duration(10.0)):
