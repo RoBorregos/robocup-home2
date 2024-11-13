@@ -188,7 +188,7 @@ class ReceptionistTaskManager:
                 rospy.loginfo("Self introduction")
                 self.follow_face()
                 self.subtask_manager["hri"].speak(
-                    "Hi, my name is Frida. I'll be your receptionist today. When my light blinks fast I'm listening. Could you tell me your name and your favorite drink?", now=False)
+                    "Hi, my name is Frida. I'll be your receptionist today. When my light blinks fast, I'm listening. Could you tell me your name and your favorite drink?", now=False)
                 self.current_state = STATES["REQUEST_GUEST_INFORMATION"]
 
             # Request name and favorite drink and store in current guest object

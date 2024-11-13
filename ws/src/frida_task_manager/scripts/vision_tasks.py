@@ -41,7 +41,7 @@ SHELF_SERVER = "/shelf_detector"
 DETECTION_TOPIC = "/detections"
 ROOM_DETECTIONS_TOPIC = "/vision/room_detections"
 IMAGE_TOPIC = "/zed2/zed_node/rgb/image_rect_color"
-MOONDREAM_FROM_CAMERA_AS = "/vision/moondream"
+MOONDREAM_FROM_CAMERA_AS = "/vision/moondream_from_camera"
 
 ################################################################
 # MOONDREAM PROMPTS
