@@ -107,3 +107,29 @@ rosrun frida_task_manager task_manager_server.py
 | Franciso Salas | [@Francisco-SP3](http://github.com/Francisco-SP3) | HRI, Navigation |
 | Leonardo Sánchez | [@LeoLFSH](https://github.com/LeoLFSH) | Mechanics |
 | Alex Guerrero | [@alex-guerreroc](https://github.com/alex-guerreroc) | Mechanics |
+
+## Achievements from 2024
+This year, after being accepted to participate in RoboCup 2024 held in Eindhoven, Netherlands, the team focused in developing a robust and reliable set of software modules, tailored to the specific needs for the tasks for the updated rulebook. This approach, had the purpose of showcasing a functional robot for both the Mexican Robotics Tournament (April; Monterrey, Mexico) and the RoboCup (July; Eindhoven, Netherlands).
+
+The robot was renamed as FRIDA (Friendly Robotic Interactive Domestic Assistant), an acronym reflecting the purporse of the robot, and the name in reference to Mexican culture.
+
+With the vast knowledge acquired during the international tournament, the team defined the new objectives for the remainder of the year to be: an increased focus in research and literature review, and centralized and offline refactorization of the software and systems.
+
+## Integration
+### Software Architecture
+A new empty repository was created, alongside separate repositories for each area, added as submodules of the first. This allowed us to work of different branches of development in the central computational unit (Jetson AGX inside robot).
+Every submodule was containerized, using Docker, to ease the installation process and dependency management.
+### Task manager
+A new package named task_manager was created to handle the flow of each task using general python submodules per area.
+There's a Python ROS node for each task, following a state machine architecture.
+
+## Examples of ROS Nodes Purpose
+
+* `receptionist_task_manager.py` (`ws/src/frida_task_manager/scripts/receptionist_task_manager.py`): Manages the receptionist task, including guest interaction, face recognition, and navigation to the living room.
+* `breakfast_task_manager.py` (`ws/src/frida_task_manager/scripts/breakfast_task_manager.py`): Manages the breakfast task, including picking and placing objects, pouring, and navigating to different locations.
+* `demo_tmr24.py` (`ws/src/frida_task_manager/scripts/demo_tmr24.py`): Demonstrates the task manager for the breakfast task, including guest interaction, face recognition, and serving breakfast.
+* `task_manager_server.py` (`ws/src/frida_task_manager/scripts/task_manager_server.py`): Serves as a template for developing multiple task managers for various tasks in RoboCup@Home.
+* `hri_tasks.py` (`ws/src/frida_task_manager/scripts/hri_tasks.py`): Manages the implementation of Human-Robot Interaction (HRI) tasks, including speaking, guest information retrieval, and guest analysis.
+* `manipulation_tasks.py` (`ws/src/frida_task_manager/scripts/manipulation_tasks.py`): Manages the implementation of manipulation tasks, including picking, placing, and moving arm joints.
+* `nav_tasks.py` (`ws/src/frida_task_manager/scripts/nav_tasks.py`): Manages the implementation of navigation tasks, including moving to specific locations and storing the current location.
+* `vision_tasks.py` (`ws/src/frida_task_manager/scripts/vision_tasks.py`): Manages the implementation of vision tasks, including saving face names, checking for persons, and finding free seats.
