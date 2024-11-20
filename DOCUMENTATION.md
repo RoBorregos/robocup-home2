@@ -1,30 +1,22 @@
-# Instructions for executing tasks
+# Documentation of Current State 2024
 
-## Receptionist
+## Overview
 
-The task manager in charge of executing this task is `receptionist_task_manager.py`.
+This document provides a detailed overview of the purpose of each area in the service robot and the technologies used. It includes examples of each ROS node's purpose and a detailed example of a task flow for the `receptionist_task_manager.py` node.
 
-### HRI
+## Purpose of Each Area
 
-The launch file `language_processing.launch` executes *almost* all the neccesary nodes for the **language proccessing** pipeline:
-- `command_interpreter.py`: Receives raw text and publishes processed commands. 
-- `conversation.py`: Receives instructions to interact with the user when receiving the interact or ask commands.
-- `stop_lister.py`: Stops the robot when listening the keyword **stop**.
-- `guest_analyzer.py`: Uses the GPT vision model to extract characteristics from the guest's face.
-
-The launch file `speech.launch` executes the **speech** pipeline. Make sure to make the neccesary setup steps in the devices being used. (Refer to this [README](https://github.com/RoBorregos/home-hri/tree/main/ws/src/speech)).
-
-### Vision
-
-The launch file `receptionist.launch` executes the nodes needed:
-- `FaceRecognition.py`: Find faces and returns the bounding boxes. Assign names when calling the service `/new_name`.
-- `PersonDetection.py`: Checks if there is a person's body with the `/check_person`service. And includes the `/find_seat` service, it's in this node to avoid loading the Yolo model twice.
+### Human-Robot Interaction (HRI)
+The HRI area focuses on enabling the robot to interact effectively with humans. It includes tasks such as speaking, guest information retrieval, and guest analysis. The `hri_tasks.py` node manages the implementation of HRI tasks.
 
 ### Manipulation
-`arm_joint_server`: For moving the arm to predefined locations or following a face.
+The manipulation area focuses on enabling the robot to perform tasks that involve manipulating objects. It includes tasks such as picking, placing, and moving arm joints. The `manipulation_tasks.py` node manages the implementation of manipulation tasks.
 
 ### Navigation
-Nodes neccesary for navigation between rooms.
+The navigation area focuses on enabling the robot to move to specific locations and store the current location. The `nav_tasks.py` node manages the implementation of navigation tasks.
+
+### Vision
+The vision area focuses on enabling the robot to process visual information and interact with its environment. It includes tasks such as saving face names, checking for persons, and finding free seats. The `vision_tasks.py` node manages the implementation of vision tasks.
 
 ## Examples of ROS Nodes Purpose
 

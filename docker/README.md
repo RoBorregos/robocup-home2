@@ -49,3 +49,29 @@ docker exec -it --user $(id -u):$(id -g) container-name bash
 ```
 
 **Important:** The `user` parameter is neccessary in order to run docker in rootless mode, otherwise, files and folders created inside the container will be protected and only editable using `sudo`.
+
+## Examples and Detailed Explanations of ROS Nodes
+
+### `receptionist_task_manager.py`
+The `receptionist_task_manager.py` node manages the receptionist task, including guest interaction, face recognition, and navigation to the living room. It coordinates various subtask managers for HRI, manipulation, navigation, and vision to achieve the desired behavior.
+
+### `breakfast_task_manager.py`
+The `breakfast_task_manager.py` node manages the breakfast task, including picking and placing objects, pouring, and navigating to different locations. It ensures the robot can perform the necessary actions to serve breakfast.
+
+### `demo_tmr24.py`
+The `demo_tmr24.py` node demonstrates the task manager for the breakfast task, including guest interaction, face recognition, and serving breakfast. It showcases the capabilities of the robot in a controlled environment.
+
+### `task_manager_server.py`
+The `task_manager_server.py` node serves as a template for developing multiple task managers for various tasks in RoboCup@Home. It provides a base structure for managing tasks and coordinating subtask managers.
+
+### `hri_tasks.py`
+The `hri_tasks.py` node manages the implementation of Human-Robot Interaction (HRI) tasks, including speaking, guest information retrieval, and guest analysis. It ensures the robot can effectively interact with humans.
+
+### `manipulation_tasks.py`
+The `manipulation_tasks.py` node manages the implementation of manipulation tasks, including picking, placing, and moving arm joints. It ensures the robot can perform the necessary actions to manipulate objects.
+
+### `nav_tasks.py`
+The `nav_tasks.py` node manages the implementation of navigation tasks, including moving to specific locations and storing the current location. It ensures the robot can navigate effectively within its environment.
+
+### `vision_tasks.py`
+The `vision_tasks.py` node manages the implementation of vision tasks, including saving face names, checking for persons, and finding free seats. It ensures the robot can accurately process visual information and interact with its environment.
