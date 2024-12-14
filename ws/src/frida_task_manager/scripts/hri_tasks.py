@@ -38,6 +38,8 @@ class TasksHRI:
         feedback = "feedback"
         analyze_objects = "analyze_objects"
         speak = "speak"
+        clarification = "clarification"
+        analyze_guest = "analyze_guest"
 
     OBJECT_CATEGORIES = ["decorations", "cleaning_supplies",
                          "toys", "fruits", "drinks", "snaks", "dishes", "food"]
@@ -88,20 +90,20 @@ class TasksHRI:
         rospy.loginfo("[INFO] HRI Command")
         composed_request = f"{command}: {complement}, perceived info: {perceived_information}"
 
-        if command == "analyze_guest":
+        if command == TasksHRI.Tasks.analyze_guest.value:
             return self.analyze_guest(int(complement))
         elif command == "get_guest_info":
             return self.get_guest_info(int(complement))
         elif command == "get_guest_description":
             return self.get_guest_description(int(complement))
-        elif command == "speak":
+        elif command == TasksHRI.Tasks.speak.value:
             return self.speak(complement)
         elif command == "cancel":
             return self.cancel_command()
-        elif command == "clarification":
+        elif command == TasksHRI.Tasks.clarification.value:
             self.speak("I didn't understand your command.")
             return self.speak(complement)
-        elif command == "analyze_objects":
+        elif command == TasksHRI.Tasks.analyze_objects.value:
             return self.get_objects_category(perceived_information.split(","))
 
         goal = ConversateGoal()

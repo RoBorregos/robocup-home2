@@ -72,7 +72,7 @@ class TasksVision:
         "EXECUTION_SUCCESS": 1
     }
 
-    AREA_TASKS = ["get_bag", "wait", "save", "get_shelves"]
+    AREA_TASKS = ["get_bag", "wait", "save", "get_shelves", "describe"]
 
     def __init__(self, fake=False) -> None:
 
@@ -146,6 +146,8 @@ class TasksVision:
             self.find_seat()
         elif command == "cancel":
             self.cancel_command()
+        elif command == "describe":
+            self.describe()
         else:
             rospy.logerr("[ERROR] Command not recognized")
             return TasksVision.STATE["TERMINAL_ERROR"]
@@ -389,7 +391,7 @@ class TasksVision:
 
         for retry in range(3):
             rospy.loginfo(f"Get people retry {retry}.")
-
+            # people = []
             people = self.get_people()
             if len(people) != 0:
                 break
@@ -422,6 +424,48 @@ class TasksVision:
             print("Cut answer")
             result.response = result.response.lower().replace("A person", "The person is")
         self.guest_description[guest_id] = result.response
+
+        return result.response
+
+    def describe(self) -> str:
+        """Method to get a guest description using moondream"""
+
+        rospy.loginfo("Checking for people in the image")
+
+        for retry in range(3):
+            rospy.loginfo(f"Get people retry {retry}.")
+            # people = []
+            people = self.get_people()
+            if len(people) != 0:
+                break
+
+        rospy.loginfo(f"Found {len(people)} people in the image")
+        closest_person_id = -1
+        closest_distance = 10000
+        for i, person in enumerate(people):
+            distance = math.sqrt(
+                person.Point3D.point.x**2 + person.Point3D.point.y**2 + person.Point3D.point.z**2)
+            if distance < closest_distance:
+                closest_distance = distance
+                closest_person_id = i
+        if closest_person_id == -1:
+            return ""
+
+        rospy.loginfo("Sending Moondream goal to describe person in image")
+        rospy.loginfo(
+            f"Person coordinates: {people[closest_person_id].xmin}, {people[closest_person_id].ymin}, {people[closest_person_id].xmax}, {people[closest_person_id].ymax}")
+        self.moondream_from_camera_client.send_goal(MoondreamFromCameraGoal(camera_topic=IMAGE_TOPIC, prompt=DESCRIPTION_PROMPT,
+                                                    roi_x1=people[closest_person_id].xmin, roi_y1=people[closest_person_id].ymin, roi_x2=people[closest_person_id].xmax, roi_y2=people[closest_person_id].ymax))
+        self.moondream_from_camera_client.wait_for_result()
+        result = self.moondream_from_camera_client.get_result()
+
+        if "the person in the image" in result.response.lower():
+            print("Cut answer")
+            result.response = result.response.lower().replace(
+                "the person in the image", "The person")
+        elif "a person" in result.response.lower():
+            print("Cut answer")
+            result.response = result.response.lower().replace("A person", "The person is")
 
         return result.response
 

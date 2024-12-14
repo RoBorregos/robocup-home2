@@ -138,7 +138,6 @@ class ReceptionistTaskManager:
         ]
 
         self.host_identified = False
-
         self.run()
 
     def get_face_locations(self, data: PersonList) -> None:
@@ -364,12 +363,16 @@ class ReceptionistTaskManager:
 
                 self.subtask_manager["hri"].speak(
                     "I've detected you took your seat. I'll go back to the entrance now.", now=True)
+                self.subtask_manager["nav"].execute_command(
+                    "go", "entrance", "")
                 if self.current_guest < 2:
                     self.current_guest += 1
                     self.current_state = STATES["GO_TO_ENTRANCE"]
                 else:
                     self.subtask_manager["hri"].speak(
                         "I have finished my task.", now=True)
+                    self.subtask_manager["nav"].execute_command(
+                        "go", "entrance", "")
                     self.current_state = STATES["SHUTDOWN"]
 
             # Go back to the entrance
